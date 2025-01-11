@@ -1,10 +1,11 @@
 const nextConfig = {
-  output: 'export',  // Required for static site generation
+  output: 'export',
   images: {
-    unoptimized: true, // Required for static export
+    unoptimized: true,
   },
-  basePath:   'cv',
-  assetPrefix:   'cv',
+  basePath: '/cv',  // Change this to match your repo name
+  assetPrefix: '/cv/',  // Change this to match your repo name
+  trailingSlash: true,
 }
 
 export default nextConfig;
