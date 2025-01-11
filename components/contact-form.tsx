@@ -80,7 +80,7 @@ export default function ContactForm() {
       {/* Form */}
       <div className='relative'>
         <form
-          onSubmit={handleSubmit(processForm)}
+          // onSubmit={handleSubmit(processForm)}
           className='mt-16 lg:flex-auto'
           noValidate
         >

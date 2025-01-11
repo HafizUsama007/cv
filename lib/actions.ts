@@ -1,13 +1,10 @@
-'use server'
-
+// lib/actions.ts
+// Remove the 'use server' directive
 import { z } from 'zod'
-import { Resend } from 'resend'
 import { ContactFormSchema, NewsletterFormSchema } from '@/lib/schemas'
-import ContactFormEmail from '@/emails/contact-form-email'
 
 type ContactFormInputs = z.infer<typeof ContactFormSchema>
 type NewsletterFormInputs = z.infer<typeof NewsletterFormSchema>
-const resend = new Resend(process.env.RESEND_API_KEY)
 
 export async function sendEmail(data: ContactFormInputs) {
   const result = ContactFormSchema.safeParse(data)
@@ -18,16 +15,20 @@ export async function sendEmail(data: ContactFormInputs) {
 
   try {
     const { name, email, message } = result.data
-    const { data, error } = await resend.emails.send({
-      from: 'hello@hamedbahram.io',
-      to: [email],
-      cc: ['hello@hamedbahram.io'],
-      subject: 'Contact form submission',
-      text: `Name: ${name}\nEmail: ${email}\nMessage: ${message}`,
-      react: ContactFormEmail({ name, email, message })
+    const response = await fetch('https://api.web3forms.com/submit', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        access_key: process.env.NEXT_PUBLIC_WEB3FORMS_KEY,
+        name,
+        email,
+        message
+      })
     })
 
-    if (!data || error) {
+    if (!response.ok) {
       throw new Error('Failed to send email')
     }
 
@@ -46,16 +47,21 @@ export async function subscribe(data: NewsletterFormInputs) {
 
   try {
     const { email } = result.data
-    const { data, error } = await resend.contacts.create({
-      email: email,
-      audienceId: process.env.RESEND_AUDIENCE_ID as string
+    const response = await fetch('https://api.web3forms.com/submit', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        access_key: process.env.NEXT_PUBLIC_WEB3FORMS_KEY,
+        email,
+        form_type: 'newsletter'
+      })
     })
 
-    if (!data || error) {
+    if (!response.ok) {
       throw new Error('Failed to subscribe')
     }
-
-    // TODO: Send a welcome email
 
     return { success: true }
   } catch (error) {
