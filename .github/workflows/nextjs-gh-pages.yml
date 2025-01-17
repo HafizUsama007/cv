@@ -1,6 +1,7 @@
-name: Nextjs GH Pages
+name: Deploy Next.js site to Pages
 
 on:
+  # Runs on pushes targeting the default branch
   push:
     branches: [main]
   workflow_dispatch:
@@ -15,31 +16,40 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+
     steps:
-      - uses: actions/checkout@v4
-      
-      - uses: actions/setup-node@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 18
-          
+          cache: 'npm'
+
       - name: Install dependencies
         run: |
-          npm install
-          npm install sharp
-          
-      - name: Build
-        run: npm run build
-        
-      - uses: actions/configure-pages@v4
-      
-      - uses: actions/upload-pages-artifact@v3
+          npm ci
+          npm install sharp --force
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Build with Next.js
+        run: |
+          npm run build
+          touch out/.nojekyll
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
           path: ./out
-          
-      - uses: actions/deploy-pages@v4
+
+      - name: Deploy to GitHub Pages
         id: deployment
+        uses: actions/deploy-pages@v4
