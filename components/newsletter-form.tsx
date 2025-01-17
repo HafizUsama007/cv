@@ -74,7 +74,8 @@ export default function NewsletterForm() {
             <div className='w-full'>
               <Button
                 type='submit'
-                disabled={isSubmitting}
+                // disabled={isSubmitting}
+                disabled={true}
                 className='w-full disabled:opacity-50'
               >
                 {isSubmitting ? 'Submitting...' : 'Subscribe'}

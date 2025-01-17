@@ -1,0 +1,116 @@
+---
+title: Text Transformer - AI-Powered Writing Assistant
+summary:
+  A React-based application that transforms text into different tones using
+  Google's free Gemini API
+image: '/cv/images/projects/text-transformer.png'
+author: 'Hafiz Syed Usama Bin Qamar'
+publishedAt: '2025-01-17'
+---
+
+Text Transformer is a powerful web application that helps users modify the tone
+of their text while preserving the original meaning. Built with React and
+powered by Google's free Gemini 1.5 Flash API, it offers an intuitive way to
+enhance your writing for any context.
+
+## Links
+
+- **Live Demo**:
+  <a
+    href='https://pro-texter.vercel.app/'
+    target='_blank'
+    rel='noopener noreferrer'
+  >
+    View Project
+  </a>
+- **GitHub Repository**:
+  <a
+    href='https://github.com/UsamaBinQamar/pro-texter'
+    target='_blank'
+    rel='noopener noreferrer'
+  >
+    Source Code
+  </a>
+
+## Features
+
+- **Multiple Tone Options**: Transform text into professional, funny, sarcastic,
+  poetic, and more styles
+- **Free AI Integration**: Powered by Google's Gemini API at no cost
+- **Real-time Processing**: Instant text transformation with live preview
+- **User-friendly Interface**: Clean, modern design with dark theme
+- **Responsive Layout**: Works seamlessly across all devices
+
+## Technologies
+
+- **React & Next.js**: Modern frontend framework for smooth user experience
+- **Gemini 1.5 Flash API**: Google's powerful and free AI language model
+- **Tailwind CSS**: Utility-first CSS framework for responsive design
+- **Environment Variables**: Secure API key management
+- **Custom Hooks**: Efficient state management
+
+## Implementation
+
+The core functionality relies on the Gemini API integration:
+
+```javascript
+const handleToneChange = async tone => {
+  const genAI = new GoogleGenerativeAI(apiKey)
+  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
+
+  const tonePrompts = {
+    funny: `Rephrase this sentence in a hilarious, witty tone: "${inputText}"`,
+    professional: `Rephrase this sentence in a formal, corporate tone: "${inputText}"`
+    // Additional tone options...
+  }
+
+  const result = await model.generateContent(tonePrompts[tone])
+  return result.response.text()
+}
+```
+
+## Getting Started
+
+To run this project locally:
+
+```bash
+# Clone the repository
+git clone [your-repo-url]
+
+# Install dependencies
+npm install
+
+# Set up environment variables
+# Create .env.local and add your Gemini API key:
+NEXT_PUBLIC_GEMINI_API_KEY=your_api_key_here
+
+# Start development server
+npm run dev
+```
+
+## Use Cases
+
+The Text Transformer is valuable for various scenarios:
+
+- Crafting professional emails
+- Writing creative content
+- Preparing academic papers
+- Creating social media posts
+- Developing marketing copy
+
+## Future Enhancements
+
+Planned improvements include:
+
+- Additional tone options
+- Bulk text processing
+- Save favorite transformations
+- Multiple language support
+- Custom tone creation
+
+## Conclusion
+
+Text Transformer demonstrates how modern web technologies and AI can enhance our
+daily communication. By leveraging the free Gemini API and React's capabilities,
+it provides a practical solution for improving writing across different
+contexts.
