@@ -28,6 +28,15 @@ const navigation = [
   //   )
   // },
   {
+    name: 'Email',
+    href: 'mailto:usamadevio@gmail.com',
+    icon: (props: JSX.IntrinsicAttributes & SVGProps<SVGSVGElement>) => (
+      <svg fill='currentColor' viewBox='0 0 24 24' {...props}>
+        <path d='M2 4a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4zm2 0v.01L12 13l8-8.99V4H4zm16 2.41l-7.29 7.3a1 1 0 0 1-1.42 0L4 6.41V20h16V6.41z' />
+      </svg>
+    )
+  },
+  {
     name: 'LinkedIn',
     href: 'https://www.linkedin.com/in/usamabinqamar/',
     icon: (props: JSX.IntrinsicAttributes & SVGProps<SVGSVGElement>) => (
@@ -60,7 +69,7 @@ const navigation = [
         />
       </svg>
     )
-  },
+  }
   // {
   //   name: 'YouTube',
   //   href: '#',
@@ -97,8 +106,7 @@ export default function Footer() {
           </div>
           <div className='mt-8 md:order-1 md:mt-0'>
             <p className='text-center text-xs leading-5 text-muted-foreground'>
-              &copy; {new Date().getFullYear()} usamadevio. All rights
-              reserved.
+              &copy; {new Date().getFullYear()} usamadevio. All rights reserved.
             </p>
           </div>
         </div>
