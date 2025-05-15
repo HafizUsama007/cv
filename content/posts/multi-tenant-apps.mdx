@@ -1,0 +1,64 @@
+---
+title: Why Multi-Tenant Apps Are the Future of Scalable Web Development
+summary:
+  Explore how multi-tenant architecture can streamline infrastructure, reduce
+  costs, and deliver branded experiences across domains or subdomains for modern
+  web applications.
+image: /cv/images/posts/multi-tenant-apps.webp
+author: 'Your Name'
+publishedAt: '2024-07-28'
+---
+
+Multi-tenant applications are revolutionizing how developers build and deploy
+web platforms. By serving multiple customers (tenants) from a single codebase,
+you can streamline infrastructure, reduce costs, and deliver branded experiences
+across domains or subdomains. Platforms like Zapier, Hashnode, and Super
+leverage this approach, and with tools like Next.js and Vercel, you can too. In
+this post, we'll explore why multi-tenant apps are a game-changer and how to get
+started.
+
+## What Makes Multi-Tenant Apps Special?
+
+A multi-tenant app allows you to host multiple clients—each with their own
+domain (e.g., tenantcustomdomain.com) or subdomain (e.g.,
+tenant1.acme.com)—under one Next.js deployment. This setup offers:
+
+- **Scalability**: Manage one codebase instead of multiple deployments.
+- **Cost Efficiency**: Reduce server and maintenance overhead.
+- **Branding Flexibility**: Support custom domains for premium clients while
+  offering subdomains for others.
+- **Seamless SSL and DNS**: Vercel handles SSL certificates and DNS routing
+  automatically, ensuring low-latency responses via its Anycast network.
+
+Popular use cases include content platforms (e.g., Read.cv), e-commerce builders
+(e.g., Typedream), and B2B SaaS tools (e.g., Cal). Whether you're building a
+blog platform or a SaaS product, multi-tenancy simplifies growth.
+
+## Getting Started with Next.js and Vercel
+
+To build a multi-tenant app:
+
+1. **Set Up Your Next.js Project**: Create a Next.js app and deploy it on
+   Vercel.
+2. **Configure Domains**: Add your apex domain (e.g., acme.com) and a wildcard
+   domain (e.g., \*.acme.com) in Vercel's project settings. Point your domain to
+   Vercel's nameservers (ns1.vercel-dns.com, ns2.vercel-dns.com) for wildcard
+   SSL support.
+3. **Handle Tenant Domains**: Use Vercel's TypeScript SDK to programmatically
+   add custom domains for tenants. For example, you can add customacmesite.com
+   to your project and trigger SSL certificate generation.
+4. **Verify Ownership**: Ensure tenants verify their custom domains by adding
+   TXT records, as unverified domains won't receive SSL certificates.
+
+## Pro Tip: Avoid Common Pitfalls
+
+- **DNS Propagation**: DNS changes can take 24–48 hours. Use tools like
+  WhatsMyDNS to monitor progress.
+- **SEO Duplicate Content**: If a tenant uses both a subdomain and a custom
+  domain, set a canonical URL or redirect to the primary domain to avoid SEO
+  penalties.
+- **Wildcard Domains**: Always use Vercel's nameservers for wildcard subdomains
+  to enable automatic SSL.
+
+Ready to scale your app? Multi-tenant architecture with Next.js and Vercel is
+your ticket to efficient, branded, and scalable web development.

@@ -1,0 +1,82 @@
+---
+title: Using Preview URLs in Multi-Tenant Next.js Applications
+summary:
+  Learn how to leverage Vercel's preview deployments for testing tenant-specific
+  changes before they go live, creating a smooth development workflow.
+image: /cv/images/posts/preview-urls-multi-tenant.webp
+author: 'Your Name'
+publishedAt: '2024-08-02'
+---
+
+Preview URLs are a powerful feature for multi-tenant apps, allowing you to test
+changes for each tenant before they go live. With Vercel's Next.js support, you
+can create dynamic preview URLs for tenants (e.g.,
+tenant1---project-git-branch.yourdomain.dev) to ensure a smooth development
+workflow. In this post, we'll dive into setting up and troubleshooting
+multi-tenant preview URLs.
+
+## Why Use Preview URLs?
+
+Preview URLs let you:
+
+- Test tenant-specific changes without affecting the live site.
+- Share previews with clients for feedback before deployment.
+- Maintain a consistent development process across multiple tenants.
+
+For example, a content platform like Hashnode or a SaaS tool like Instatus can
+use preview URLs to show tenants how their site will look with new features.
+
+## Setting Up Multi-Tenant Preview URLs
+
+Vercel's Preview Deployment Suffixes make it easy to generate tenant-specific
+preview URLs. Here's how:
+
+### 1. Enable Preview Deployments:
+
+In your Vercel project settings, ensure preview deployments are enabled for your
+Git branches.
+
+### 2. Configure Preview Suffixes:
+
+Vercel supports dynamic subdomains like
+`tenant1---<project-name>-git-<branch-name>.yourdomain.dev`. To set this up:
+
+- Add a wildcard domain (e.g., `*.yourdomain.dev`) to your Vercel project.
+- Point your domain to Vercel's nameservers (`ns1.vercel-dns.com`,
+  `ns2.vercel-dns.com`) for SSL support.
+
+### 3. Test Tenant Previews:
+
+When you push changes to a branch, Vercel generates a preview URL for each
+tenant. For example:
+
+- `tenant1---my-multi-tenant-app-git-feature.yourdomain.dev`
+- `tenant2---my-multi-tenant-app-git-feature.yourdomain.dev`
+
+These URLs let you test the feature branch for each tenant independently.
+
+## Troubleshooting Common Issues
+
+- **Subdomain Length Limits**: DNS labels have a 63-character limit. Long branch
+  names combined with tenant subdomains can cause resolution failures. Keep
+  branch names short (e.g., `feat` instead of `feature-add-new-auth-system`).
+- **Wildcard SSL Issues**: If preview URLs don't resolve, ensure your wildcard
+  domain uses Vercel's nameservers. Without them, SSL certificates won't be
+  issued.
+- **DNS Propagation**: Preview URLs rely on DNS updates, which can take 24–48
+  hours. Use WhatsMyDNS to verify propagation.
+- **Misspelled Domains**: Double-check domain names in your Vercel settings to
+  avoid routing errors.
+
+## Best Practices
+
+- **Automate Testing**: Use CI/CD pipelines to trigger preview deployments and
+  validate tenant-specific changes.
+- **Secure Previews**: Restrict access to preview URLs using Vercel's
+  authentication features to protect sensitive tenant data.
+- **Clean Up**: Remove unused preview URLs to avoid clutter and potential DNS
+  issues.
+
+With Vercel's preview URLs, you can deliver a robust development experience for
+your multi-tenant app, ensuring each tenant's site is perfect before going live.
+Try it out with your Next.js project today!

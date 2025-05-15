@@ -1,0 +1,120 @@
+---
+title: Adding Custom Domains to Multi-Tenant Next.js Apps
+summary:
+  Learn how to implement custom domain support for your multi-tenant application
+  using Vercel's API and Next.js, enhancing branding and user experience.
+image: /cv/images/posts/custom-domains-multi-tenant.webp
+author: 'Your Name'
+publishedAt: '2024-07-30'
+---
+
+Custom domains give your multi-tenant app a professional edge, allowing tenants
+to use their own domains (e.g., customacmesite.com) instead of a subdomain
+(e.g., tenant1.acme.com). With Vercel's powerful platform and Next.js, adding
+and managing custom domains is straightforward. In this guide, we'll walk
+through the process of programmatically adding custom domains, verifying
+ownership, and handling redirects.
+
+## Why Offer Custom Domains?
+
+Custom domains enhance branding and trust. For example:
+
+- A SaaS platform like Zapier lets clients use their own domains for a polished
+  look.
+- E-commerce builders like Super allow stores to operate under unique domains.
+- Documentation platforms like Mintlify enable clients to brand their docs.
+
+Vercel simplifies this by automatically issuing SSL certificates and managing
+DNS routing, ensuring a seamless experience for your tenants.
+
+## Step-by-Step: Adding a Custom Domain
+
+Here's how to add a custom domain to your multi-tenant Next.js app using
+Vercel's TypeScript SDK:
+
+### 1. Initialize the Vercel SDK:
+
+Set up the SDK with your Vercel API token, stored securely in an environment
+variable.
+
+### 2. Add the Domain Programmatically:
+
+Use the `projectsAddProjectDomain` function to associate the tenant's domain
+with your Vercel project. For example:
+
+```typescript
+import { VercelCore as Vercel } from '@vercel/sdk/core.js'
+import { projectsAddProjectDomain } from '@vercel/sdk/funcs/projectsAddProjectDomain.js'
+
+const vercel = new Vercel({
+  bearerToken: process.env.VERCEL_TOKEN
+})
+
+await projectsAddProjectDomain(vercel, {
+  idOrName: 'my-multi-tenant-app',
+  teamId: 'team_1234',
+  requestBody: {
+    name: 'customacmesite.com'
+  }
+})
+```
+
+This adds customacmesite.com to your project, and Vercel begins the SSL
+certificate process.
+
+### 3. Verify Domain Ownership:
+
+To ensure the tenant owns the domain, check its verification status and prompt
+them to add a TXT record if needed:
+
+```typescript
+import { VercelCore as Vercel } from '@vercel/sdk/core.js'
+import { projectsGetProjectDomain } from '@vercel/sdk/funcs/projectsGetProjectDomain.js'
+import { projectsVerifyProjectDomain } from '@vercel/sdk/funcs/projectsVerifyProjectDomain.js'
+
+const vercel = new Vercel({
+  bearerToken: process.env.VERCEL_TOKEN
+})
+
+const domain = 'customacmesite.com'
+
+const [domainResponse, verifyResponse] = await Promise.all([
+  projectsGetProjectDomain(vercel, {
+    idOrName: 'my-multi-tenant-app',
+    teamId: 'team_1234',
+    domain
+  }),
+  projectsVerifyProjectDomain(vercel, {
+    idOrName: 'my-multi-tenant-app',
+    teamId: 'team_1234',
+    domain
+  })
+])
+
+const { value: result } = verifyResponse
+
+if (!result?.verified) {
+  console.log(`Domain verification required for ${domain}.`)
+  // Prompt tenant to add TXT record
+}
+```
+
+### 4. Handle Redirects:
+
+To avoid duplicate content, redirect www.customacmesite.com to
+customacmesite.com (or vice versa). Add both domains to your project and
+configure the redirect in Vercel's dashboard or via the API.
+
+## Troubleshooting Tips
+
+- **Verification Issues**: If SSL certificates aren't issued, double-check that
+  the tenant has added the correct TXT record or switched to Vercel's
+  nameservers.
+- **DNS Delays**: Domain changes can take up to 48 hours to propagate. Monitor
+  with WhatsMyDNS.
+- **SEO Concerns**: Use canonical URLs to indicate the primary domain and
+  prevent search engine penalties.
+
+By offering custom domains, you empower your tenants to create branded
+experiences while keeping your infrastructure simple. Start building with Vercel
+and Next.js today!
