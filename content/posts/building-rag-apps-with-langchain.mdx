@@ -1,0 +1,130 @@
+---
+title: 'Building RAG Apps — A Practical Guide with LangChain'
+summary:
+  How to build a production Retrieval-Augmented Generation pipeline end to end —
+  chunking, embeddings, a vector database, retrieval, and grounded generation —
+  with the patterns that actually hold up in production.
+author: 'Hafiz Syed Usama Bin Qamar'
+publishedAt: '2026-06-26'
+---
+
+**Give your LLM the right context, and it stops hallucinating.** That's the
+whole promise of Retrieval-Augmented Generation (RAG) — and it's why almost
+every serious AI product I build today has a retrieval layer underneath it.
+
+This is a practical, end-to-end walkthrough: the moving parts, the code, and the
+gotchas that separate a demo from something you can ship.
+
+## Why RAG instead of just prompting?
+
+LLMs only know what they were trained on. Ask one about *your* docs, *your*
+codebase, or anything after its cutoff, and it either refuses or makes something
+up. RAG fixes this by fetching relevant context at query time and handing it to
+the model alongside the question.
+
+- ✅ **Fresh & private data** — answer over content the model never saw in
+  training.
+- ✅ **Fewer hallucinations** — answers are grounded in retrieved sources.
+- ✅ **Citations** — you can show *where* an answer came from.
+- ✅ **Cheaper than fine-tuning** — no retraining when your data changes.
+
+## The pipeline at a glance
+
+Every RAG system, no matter how fancy, is the same five steps:
+
+| Step | What happens | Tools |
+| --- | --- | --- |
+| 1. Load | Pull in raw docs (PDF, MD, HTML, DB) | LangChain loaders |
+| 2. Chunk | Split into retrievable pieces | Text splitters |
+| 3. Embed | Turn chunks into vectors | OpenAI / Cohere embeddings |
+| 4. Store | Index vectors for fast search | Pinecone, pgvector, Chroma |
+| 5. Retrieve + Generate | Fetch top-k, feed to the LLM | LangChain + your model |
+
+The first four steps run **offline (ingestion)**. Only the last runs at query
+time.
+
+## Step 1–4: Ingestion
+
+Load your documents, split them into overlapping chunks, embed them, and push
+them into a vector store. The overlap matters — it keeps a sentence from being
+cut in half across two chunks.
+
+```ts
+import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter'
+import { OpenAIEmbeddings } from '@langchain/openai'
+import { PineconeStore } from '@langchain/pinecone'
+
+const splitter = new RecursiveCharacterTextSplitter({
+  chunkSize: 1000,
+  chunkOverlap: 200
+})
+
+const chunks = await splitter.splitDocuments(rawDocs)
+
+await PineconeStore.fromDocuments(chunks, new OpenAIEmbeddings(), {
+  pineconeIndex
+})
+```
+
+## Step 5: Retrieve and generate
+
+At query time you embed the user's question, pull the most similar chunks, and
+stuff them into the prompt as context. The model answers using *only* what it
+was given.
+
+```ts
+import { ChatOpenAI } from '@langchain/openai'
+import { PromptTemplate } from '@langchain/core/prompts'
+
+const retriever = vectorStore.asRetriever({ k: 4 })
+const docs = await retriever.invoke(question)
+
+const prompt = PromptTemplate.fromTemplate(`
+Answer the question using ONLY the context below.
+If the answer isn't there, say you don't know.
+
+Context:
+{context}
+
+Question: {question}
+`)
+
+const model = new ChatOpenAI({ model: 'gpt-4o-mini', temperature: 0 })
+const answer = await model.invoke(
+  await prompt.format({ context: docs.map(d => d.pageContent).join('\n\n'), question })
+)
+```
+
+That `temperature: 0` and the "say you don't know" instruction are doing a lot of
+work — they're your first line of defense against confident nonsense.
+
+## Choosing a vector store
+
+You don't need anything exotic to start. Pick based on what you already run:
+
+- 🐘 **pgvector** — already on Postgres? Use this. One less service to manage.
+- 🌲 **Pinecone** — fully managed, scales effortlessly, great for serverless.
+- 🧪 **Chroma** — perfect for local dev and prototyping.
+
+## Where RAG quietly breaks
+
+Demos work on the first try. Production is where the rough edges show up:
+
+- **Bad chunking** — chunks too big bury the answer in noise; too small and they
+  lose context. Tune `chunkSize`/`chunkOverlap` against *your* data.
+- **Retrieval misses** — pure vector search struggles with keywords and acronyms.
+  Add **hybrid search** (keyword + semantic) and a **reranker**.
+- **Stale index** — your docs change but the index doesn't. Build a re-ingestion
+  job, not a one-off script.
+- **No evals** — if you can't measure retrieval quality, you're flying blind.
+  Track hit-rate and answer faithfulness from day one.
+
+## Takeaway
+
+RAG isn't magic — it's a search problem wearing an AI hat. Nail retrieval
+quality and the generation almost takes care of itself. Start with the simple
+five-step pipeline above, ship it, then layer in hybrid search, reranking, and
+evals as real usage exposes the gaps.
+
+> Build the boring, reliable retrieval layer first. The "AI" part is the easy
+> 20%.

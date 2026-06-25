@@ -1,0 +1,101 @@
+---
+title: 'LLM Agents & Tool Calling — Building Real Workflows with LangGraph'
+summary:
+  Move beyond single prompts. A practical look at agentic workflows — tool
+  calling, state, loops, and guardrails — using LangGraph to build agents that
+  actually finish the job.
+author: 'Hafiz Syed Usama Bin Qamar'
+publishedAt: '2026-06-29'
+---
+
+**A chatbot answers. An agent acts.** The moment you give an LLM tools and let
+it decide which to call, you cross from "smart autocomplete" into genuinely
+useful automation. This post is about building that second thing — reliably.
+
+## What makes something an "agent"?
+
+An agent is just an LLM in a loop with three powers:
+
+- 🔧 **Tools** — functions it can call (search, DB queries, send an email).
+- 🧠 **State** — memory of what's happened so far in the task.
+- 🔁 **Control flow** — it decides the next step until the goal is met.
+
+Take those away and you have a chatbot. Add them and you have something that can
+plan, act, observe the result, and try again.
+
+## Tool calling is the foundation
+
+Modern models don't "run" your code — they return a structured request to call
+it. You execute the tool and feed the result back. The loop continues until the
+model decides it's done.
+
+```ts
+const tools = [
+  {
+    name: 'get_weather',
+    description: 'Get current weather for a city',
+    schema: z.object({ city: z.string() })
+  }
+]
+
+const model = new ChatOpenAI({ model: 'gpt-4o' }).bindTools(tools)
+const res = await model.invoke('What should I wear in Lahore today?')
+// res.tool_calls -> [{ name: 'get_weather', args: { city: 'Lahore' } }]
+```
+
+The model picked the tool and filled the arguments. You run it, return the
+output, and the model writes the final answer grounded in real data.
+
+## Why LangGraph over a while-loop
+
+You *can* hand-roll the loop. But real agents need branching, retries, human
+approval steps, and persistence. LangGraph models the whole thing as a **state
+graph** — nodes do work, edges decide where to go next.
+
+| Concern | Naive loop | LangGraph |
+| --- | --- | --- |
+| Branching logic | Tangled `if`s | Conditional edges |
+| State across steps | Manual juggling | Typed shared state |
+| Human-in-the-loop | Hard | Built-in interrupts |
+| Resume after crash | Lost | Checkpointed |
+| Streaming progress | DIY | First-class |
+
+```ts
+const graph = new StateGraph(AgentState)
+  .addNode('agent', callModel)
+  .addNode('tools', runTools)
+  .addEdge('tools', 'agent')
+  .addConditionalEdges('agent', shouldContinue) // -> 'tools' or END
+  .setEntryPoint('agent')
+  .compile()
+```
+
+That `shouldContinue` edge is the heart of it: if the model asked for a tool, go
+run it; if it produced a final answer, stop.
+
+## Guardrails — the part demos skip
+
+An agent with tools and no limits is a liability. Before you ship:
+
+- ⏱️ **Cap the loop** — a hard max-iterations stops infinite tool-calling.
+- 🔒 **Scope tools tightly** — read-only by default; gate writes behind approval.
+- 🙋 **Human-in-the-loop** — pause for confirmation on anything destructive.
+- 📊 **Trace everything** — log every tool call and decision (LangSmith helps).
+- 💸 **Budget tokens** — agents fan out fast; set per-run cost ceilings.
+
+## Where agents shine (and where they don't)
+
+**Great fits:** research + summarization, multi-step data lookups, customer
+support that queries real systems, code refactors with verification.
+
+**Bad fits:** anything needing guaranteed determinism, single-shot tasks (just
+prompt), or workflows where a wrong action is expensive and unguarded.
+
+## Takeaway
+
+Start with **tool calling**, not a framework — get the model reliably picking
+and using one tool. Then graduate to LangGraph when you need branching, state,
+and recovery. And never ship an agent without a loop cap and tight tool scopes.
+
+> The smartest agent is worthless if you can't trust it to stop. Build the
+> guardrails first.

@@ -1,0 +1,195 @@
+---
+title: 'Lovable Integrations — Supabase Storage & Resend'
+summary:
+  How Lovable wires up file storage and transactional email for you — Supabase
+  Storage with RLS-protected files and Resend for welcome emails, password
+  resets, and scheduled campaigns, all from a prompt.
+author: 'Hafiz Syed Usama Bin Qamar'
+publishedAt: '2026-06-30'
+---
+
+**Two things every real app needs: somewhere to store files, and a way to send
+email.** With Lovable, you don't configure either by hand — you describe what
+you want and it wires up Supabase Storage and Resend for you. Here's how both
+work, and the gotchas that bite you before production.
+
+## Section 1 — Lovable + Supabase Storage
+
+> **Store files without writing a single line of code.** Supabase Storage is
+> Lovable's native file system — images, PDFs, videos, all handled
+> automatically.
+
+### What is Supabase Storage?
+
+When users upload something — a profile photo, a document, an attachment — that
+file has to live somewhere. That's Supabase Storage: an **S3-compatible** file
+service baked into every Lovable Cloud project. Not an add-on, not a third-party
+bucket you wire up — it's just there the moment you ask Lovable to handle
+uploads.
+
+Under the hood it's object storage with **PostgreSQL-level access control**, so
+you protect files with the same Row Level Security (RLS) policies as your
+database tables. A user's avatar is only accessible to that user. Private docs
+stay private. No custom middleware, no presigned-URL headaches.
+
+### How it works in practice
+
+The whole workflow is just describing what you need:
+
+> *"Add a profile picture upload to the settings page. Store it in Supabase and
+> show the image on the user's dashboard."*
+
+Lovable will:
+
+1. Create the file upload UI component
+2. Create a Supabase Storage bucket (e.g. `avatar-images`)
+3. Write the upload logic — file goes to storage, public URL comes back
+4. Display the image wherever you specified
+
+You never touch storage config. You never write a bucket policy.
+
+### What you can store
+
+- 🖼️ **User avatars & profile photos** — resize on upload, serve via CDN
+- 📄 **Document uploads** — PDFs, spreadsheets, contracts
+- 🎬 **Media files** — images, video, audio for content-heavy apps
+- 📦 **App assets** — icons, generated reports, exports
+
+The free Supabase tier gives you **1GB of file storage and 5GB of bandwidth** —
+plenty to launch and test. Paid plans scale to 100GB+.
+
+### Security: files respect your RLS policies
+
+This is what makes Supabase Storage genuinely different from using S3 directly.
+Because storage connects to your PostgreSQL database, RLS applies to files just
+like table rows.
+
+**Example:** a document management app where each file belongs to a user. One
+prompt — *"Make sure users can only access their own uploaded files"* — and
+Lovable writes the RLS policy that enforces it at the storage layer. The
+database enforces it; no app-level auth checks needed.
+
+### Lovable Cloud vs. connecting your own Supabase
+
+| Path | What you get | Best for |
+| --- | --- | --- |
+| **Lovable Cloud (default)** | Storage, auth, DB auto-provisioned; pick a region at setup | New projects, fastest path to a working app |
+| **Connect your own Supabase** | Full control; Lovable generates schemas, buckets & RLS against your project | Teams wanting dashboard access or migrating a backend |
+
+To connect your own: **Settings → Connectors → Supabase**, paste your Project
+URL and anon key.
+
+### Key things to know
+
+- 🌍 **Region is permanent** — pick it before adding real data; it can't change
+  after Cloud is enabled.
+- 🏷️ **Buckets are auto-named** from your prompt; rename them in the Supabase
+  dashboard.
+- 🔓 **Public vs. private** — Lovable defaults to private buckets with RLS. Ask
+  for a "public" bucket if files should be accessible without auth.
+- 📊 **Free tier:** 500MB database, 1GB file storage, 50,000 monthly active
+  users.
+
+## Section 2 — Lovable + Resend
+
+> **Send real emails from your app — no backend code required.** Password
+> resets, welcome emails, notifications — Resend + Lovable handles all of it from
+> one prompt.
+
+### Why Resend?
+
+Every real app sends email: password resets, welcome messages, notifications.
+Without it, your app isn't production-ready. **Resend** is the modern email API
+built for developers — clean API, excellent deliverability, first-class React
+Email support. It's the default choice on Lovable because of how cleanly it
+integrates: describe the flow, Lovable wires it, Resend delivers.
+
+### The four email flows your app needs
+
+- **1. Auth emails (handled by Supabase)** — password resets, verification, magic
+  links. Managed through Supabase Auth. To customize design or send from your
+  own domain, connect Resend as Supabase's custom SMTP provider.
+- **2. Transactional emails (via Resend)** — triggered by user actions: welcome
+  emails, order confirmations, task notifications, Stripe receipts. These go
+  through Resend via a Supabase Edge Function that Lovable creates.
+- **3. Recurring / scheduled (via Supabase pg_cron)** — weekly digests, monthly
+  reports, reminders. Lovable sets up a `pg_cron` job that calls an Edge
+  Function on a schedule: *"Send users a weekly summary every Monday at 9am."*
+- **4. Broadcast emails (one-time campaigns)** — Lovable exports your user list to
+  Resend Audiences; send via Resend Broadcasts. For richer segmentation, sync
+  your database to Resend.
+
+### Setup in 3 steps
+
+**Step 1 — Get your Resend API key.** Create an account at resend.com → API Keys
+→ generate a key. Keep it private; never paste it into frontend code.
+
+**Step 2 — Connect Resend in Lovable.** Go to **Connectors → App connectors →
+Resend → Add connection**, name it (e.g. "Resend Prod"), paste the key, save.
+Lovable stores it securely at the workspace level. Or just prompt: *"Add Resend
+integration using my API key."*
+
+**Step 3 — Describe what to send.**
+
+> *"When a new user signs up, send them a welcome email from hello@myapp.com with
+> their name and a getting-started guide link."*
+
+Lovable creates the Edge Function, hooks it to the signup event, and sends via
+Resend. Done.
+
+### Custom domain: required for production
+
+By default Lovable sends from `resend.dev` — a test domain. **This lands in spam
+for real users.** Before going live:
+
+1. Add your domain in the Resend dashboard under **Domains**
+2. Add the DNS records Resend provides (SPF, DKIM, DMARC)
+3. Verify the domain (usually a few minutes)
+4. Prompt Lovable: *"Update the From email to hello@yourdomain.com and redeploy
+   the email function"*
+
+⚠️ That last step matters — Lovable does **not** auto-update the sender address
+when your domain verifies. You must prompt it explicitly.
+
+### API key security: store it right
+
+Resend uses a secret key. **Never put it in frontend code.** Lovable stores it
+in **Supabase Secrets** (accessed only by Edge Functions) so it never reaches
+the browser. If Lovable ever tries to drop it into frontend code, tell it to use
+Supabase Secrets instead.
+
+### What you can build with this stack
+
+Combine Lovable + Supabase + Resend and you've got a full backend for
+email-heavy products:
+
+- 🚀 **SaaS onboarding** — welcome → day-3 follow-up → day-7 feature highlight
+- 🔔 **Notification systems** — real-time alerts from database events
+- 💧 **Drip campaigns** — scheduled sequences driven by pg_cron
+- 🧾 **Transactional receipts** — payment confirmations, bookings, invoice PDFs
+- 🛠️ **Internal tools** — alert admins when DB thresholds are hit
+
+### Quick reference
+
+| What you need | How to get it |
+| --- | --- |
+| File uploads | Supabase Storage (auto-provisioned by Lovable Cloud) |
+| User auth emails | Supabase Auth → custom emails with Resend |
+| Welcome / transactional | Resend via Supabase Edge Function |
+| Scheduled emails | Supabase pg_cron → Edge Function → Resend |
+| Secure API key storage | Supabase Secrets (never in frontend code) |
+| Custom sender domain | Verify in Resend → prompt Lovable to update From field |
+| Free tier storage | 1GB files, 500MB DB, 50K monthly active users |
+
+## Takeaway
+
+Storage and email are usually the two most tedious pieces of a new backend.
+Lovable collapses both into prompts — but the production details still need you:
+lock down RLS, verify a sending domain, and keep secrets out of the frontend.
+Get those right and you've got a real, shippable backend without the boilerplate.
+
+> The prompt builds it in minutes. The 20% you still own — security and
+> deliverability — is what makes it production-ready.
+
+*Content based on official Lovable docs, Resend docs, and 2025–2026 developer
+guides.*

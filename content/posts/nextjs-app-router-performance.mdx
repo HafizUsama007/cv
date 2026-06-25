@@ -1,0 +1,100 @@
+---
+title: 'Next.js App Router Performance — A Field Guide'
+summary:
+  Practical, high-impact ways to make App Router apps fast — server components,
+  caching layers, streaming with Suspense, image optimization, and the Core Web
+  Vitals that actually move the needle.
+author: 'Hafiz Syed Usama Bin Qamar'
+publishedAt: '2026-06-27'
+---
+
+**Fast isn't a feature you add at the end — it's the default you stop breaking.**
+The App Router gives you serious performance tools out of the box, but it's also
+easy to accidentally opt out of all of them. Here's how to stay fast.
+
+## Server Components are the default — keep them that way
+
+Server Components render on the server and ship **zero JavaScript** for that
+logic. The mistake I see most: slapping `'use client'` at the top of a file and
+dragging an entire subtree onto the client.
+
+- ✅ Keep pages and layouts as Server Components.
+- ✅ Push `'use client'` to the **leaves** — the one button that needs `onClick`.
+- ❌ Don't make a whole page a client component for a single interactive widget.
+
+The less you mark `'use client'`, the less JS the browser downloads and parses.
+
+## Understand the caching layers
+
+App Router caches in several places. Knowing which is which saves hours of
+"why is my data stale" debugging.
+
+| Layer | Caches | How to control |
+| --- | --- | --- |
+| Request memoization | `fetch` in one render | Automatic, per request |
+| Data Cache | `fetch` results across requests | `revalidate`, `cache: 'no-store'` |
+| Full Route Cache | Rendered static routes | `dynamic`, `revalidate` |
+| Router Cache | Visited routes (client) | Time-based, on navigation |
+
+```ts
+// Revalidate this data every 60s (ISR-style)
+const res = await fetch(url, { next: { revalidate: 60 } })
+
+// Always fresh, never cached
+const live = await fetch(url, { cache: 'no-store' })
+```
+
+Pick caching intentionally per fetch. Most "weird" Next.js behavior is just a
+cache doing exactly what you told it to.
+
+## Stream with Suspense
+
+Don't block the whole page on the slowest query. Wrap slow sections in
+`Suspense` and stream them in — the shell paints instantly while data loads.
+
+```tsx
+<main>
+  <Header />
+  <Suspense fallback={<Skeleton />}>
+    <SlowDashboard />
+  </Suspense>
+</main>
+```
+
+This turns a 2-second blank screen into an instant layout with a loading
+placeholder — a huge perceived-performance win and better for Core Web Vitals.
+
+## Images: use next/image properly
+
+Images are usually the heaviest thing on the page. `next/image` handles most of
+it for you, but only if you let it:
+
+- 📐 Always set `width`/`height` (or `fill`) to **prevent layout shift (CLS)**.
+- ⚡ Mark above-the-fold images `priority` so they don't lazy-load.
+- 🗜️ Serve modern formats (WebP/AVIF) — it does this automatically.
+- 📱 Use `sizes` so phones don't download desktop-sized images.
+
+## The Core Web Vitals that matter
+
+Optimize for what Google actually measures:
+
+- **LCP** (largest paint) → optimize the hero image/text; use `priority`.
+- **CLS** (layout shift) → reserve space for images, ads, and fonts.
+- **INP** (interaction delay) → ship less JS; keep client components small.
+
+## A quick performance checklist
+
+- [ ] `'use client'` only on interactive leaves
+- [ ] Caching set intentionally per `fetch`
+- [ ] Slow sections wrapped in `Suspense`
+- [ ] `next/image` with dimensions + `priority` on the hero
+- [ ] Fonts loaded via `next/font` with `display: 'swap'`
+- [ ] Bundle checked with `@next/bundle-analyzer`
+
+## Takeaway
+
+You rarely need exotic tricks. Stay on Server Components, cache deliberately,
+stream the slow parts, and treat images and fonts with respect. Do that and the
+App Router is fast by default — your job is mostly to not get in its way.
+
+> Performance is a hundred small defaults, not one big optimization.

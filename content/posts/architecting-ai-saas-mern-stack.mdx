@@ -1,0 +1,115 @@
+---
+title: 'Architecting an AI SaaS on the MERN Stack'
+summary:
+  A blueprint for shipping a real AI SaaS — streaming LLM responses, auth,
+  usage metering, vector storage, and Stripe billing — on top of Next.js, Node,
+  and MongoDB.
+author: 'Hafiz Syed Usama Bin Qamar'
+publishedAt: '2026-06-28'
+---
+
+**An AI SaaS is 20% model and 80% plumbing.** The prompt is the easy part. What
+actually decides whether you ship is auth, streaming, usage limits, and getting
+paid. Here's the architecture I reach for, built on the stack I know best — MERN
+with Next.js.
+
+## The high-level shape
+
+```
+Next.js (App Router)  ──►  API routes / server actions
+        │                          │
+        ▼                          ▼
+   React UI (stream)        LLM provider (OpenAI / Anthropic)
+        │                          │
+        ▼                          ▼
+   MongoDB (users,        Vector store (pgvector / Pinecone)
+   usage, history)               for RAG
+        │
+        ▼
+   Stripe (subscriptions + metered billing)
+```
+
+Everything lives in one Next.js app: UI, API, and auth — with MongoDB for app
+data and a vector store for any retrieval features.
+
+## 1. Stream responses or it feels broken
+
+Nobody waits 15 seconds staring at a spinner. Stream tokens as they generate —
+it's the single biggest UX win in an AI product.
+
+```ts
+export async function POST(req: Request) {
+  const { messages } = await req.json()
+  const stream = await openai.chat.completions.create({
+    model: 'gpt-4o-mini',
+    messages,
+    stream: true
+  })
+  return new Response(stream.toReadableStream())
+}
+```
+
+On the client, render tokens as they arrive. Perceived latency drops to near
+zero even when total time is the same.
+
+## 2. Auth and per-user isolation
+
+Every request must know *who* is asking and *what they're allowed to do*. Tie
+the user's session to their plan and limits up front:
+
+- Authenticate (NextAuth / Clerk / your own JWTs).
+- Load the user's plan + remaining quota from MongoDB.
+- Reject early if they're over the limit — before you call the model.
+
+## 3. Meter usage *before* you bill
+
+AI costs scale with tokens, so you must track them. Log usage per request and
+roll it up per billing period.
+
+| What to track | Why |
+| --- | --- |
+| Tokens in / out | Direct cost driver |
+| Requests per user | Rate limiting + abuse |
+| Feature used | Plan gating & analytics |
+| Model called | Cost attribution |
+
+Store a lightweight `usage` collection in MongoDB and increment it on every
+call. This is what makes metered billing and fair limits possible.
+
+## 4. Billing with Stripe
+
+Two patterns cover almost everything:
+
+- **Subscriptions** — flat monthly tiers (Free / Pro / Team). Simple, predictable.
+- **Metered billing** — report usage to Stripe and charge per unit. Best when
+  costs vary wildly per user.
+
+Wire **webhooks** to keep MongoDB in sync: `checkout.session.completed` to
+activate, `customer.subscription.deleted` to downgrade. Never trust the client
+to tell you someone paid.
+
+## 5. Add RAG when you need grounding
+
+If your product answers over user-specific data, drop in a retrieval layer:
+embed the user's documents into a vector store, retrieve top-k at query time,
+and pass them as context. (I wrote a full guide on this — it pairs directly with
+this architecture.)
+
+## Gotchas I've hit
+
+- 🐌 **Cold starts** on serverless hurt streaming — consider a long-running
+  runtime for the LLM endpoints.
+- 🔁 **Idempotent webhooks** — Stripe retries; dedupe by event ID.
+- 🧮 **Token estimation** — count tokens before sending to enforce limits, not
+  after.
+- 🔐 **Prompt injection** — never let retrieved/user content override your
+  system instructions blindly.
+
+## Takeaway
+
+Build the boring infrastructure — auth, streaming, metering, billing — as a
+solid base, and the AI features slot in cleanly on top. Ship the plumbing first;
+the model is the part you can swap out in an afternoon.
+
+> Your moat isn't the model everyone can call. It's the product you wrap around
+> it.
