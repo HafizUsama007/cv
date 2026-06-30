@@ -2,3 +2,6 @@ out/
 .next/
 node_modules/
 .env.local
+
+# typescript build info
+*.tsbuildinfo
