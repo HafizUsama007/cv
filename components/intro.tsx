@@ -27,11 +27,7 @@ export default function Intro() {
         </span>
 
         <h1 className='mt-5 font-serif text-4xl font-bold leading-tight sm:text-5xl'>
-          Hey, I&#39;m{' '}
-          <span className='bg-gradient-to-r from-violet-500 via-fuchsia-500 to-sky-500 bg-clip-text text-transparent'>
-            Usama
-          </span>
-          .
+          Hey, I&#39;m Usama.
         </h1>
 
         <p className='mt-4 max-w-xl text-base font-light leading-relaxed text-muted-foreground'>
@@ -70,17 +66,14 @@ export default function Intro() {
       </div>
 
       <div className='relative animate-fade-up [animation-delay:150ms]'>
-        <div className='absolute -inset-3 -z-10 animate-float rounded-full bg-gradient-to-tr from-violet-500/30 via-fuchsia-500/20 to-sky-500/30 blur-2xl' />
-        <div className='rounded-2xl bg-gradient-to-tr from-violet-500 via-fuchsia-500 to-sky-500 p-[2px]'>
-          <Image
-            className='rounded-2xl object-cover grayscale transition-all duration-500 hover:grayscale-0'
-            src={authorImage}
-            alt='Hafiz Syed Usama Bin Qamar'
-            width={180}
-            height={180}
-            priority
-          />
-        </div>
+        <Image
+          className='rounded-2xl border border-border object-cover grayscale transition-all duration-500 hover:grayscale-0'
+          src={authorImage}
+          alt='Hafiz Syed Usama Bin Qamar'
+          width={180}
+          height={180}
+          priority
+        />
       </div>
     </section>
   )

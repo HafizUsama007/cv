@@ -42,6 +42,8 @@ jobs:
         uses: actions/configure-pages@v4
         
       - name: Build with Next.js
+        env:
+          NEXT_PUBLIC_WEB3FORMS_KEY: ${{ secrets.NEXT_PUBLIC_WEB3FORMS_KEY }}
         run: |
           npm run build
           touch out/.nojekyll
