@@ -9,6 +9,16 @@ const nextConfig = {
   trailingSlash: true,
   typescript: {
     ignoreBuildErrors: true
+  },
+  async redirects() {
+    return [
+      {
+        source: '/',
+        destination: '/cv',
+        basePath: false,
+        permanent: false
+      }
+    ]
   }
 }
 
