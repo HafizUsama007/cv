@@ -1,0 +1,150 @@
+---
+title: 'Lovable Cloud vs Supabase: Which One Actually Owns Your Data?'
+summary:
+  Lovable Cloud and a dedicated Supabase project are the same Postgres engine —
+  the real choice is who holds the keys. Here's how to decide before you write
+  real data, and why getting it wrong is expensive to undo.
+author: 'Hafiz Syed Usama Bin Qamar'
+publishedAt: '2026-06-30'
+image: /cv/images/posts/lovable-cloud-vs-supabase.png
+tags:
+  - Lovable
+  - Supabase
+  - Lovable Cloud
+  - Backend
+  - Postgres
+  - RLS
+  - Data Ownership
+---
+
+If you're building on Lovable, your backend is Supabase whether you chose it or
+not. Lovable Cloud is a managed Supabase instance running under Lovable's
+account. So the real question isn't "Cloud or Supabase?" — they're the same
+Postgres engine, the same Auth, the same Storage, the same Edge Functions. The
+question is **who holds the keys, and what happens when you need to leave.**
+
+Here's how to decide, and why getting it wrong is expensive to undo.
+
+## What each one actually is
+
+**Lovable Cloud** is a backend that lives inside the Lovable editor. You
+describe what you want, and Lovable provisions a database, auth, storage, and
+serverless functions for you — no separate account, no key wiring, no context
+switching. It's built on Supabase's open-source foundation, but the Supabase
+project belongs to Lovable, not to you. You won't see it in any Supabase
+dashboard.
+
+**A dedicated Supabase project** is the same stack, provisioned in *your*
+Supabase organization. You get the SQL editor, logs, monitoring, direct Postgres
+connection string, your own billing, and full migration tooling. Lovable
+connects to it as an external backend and can still auto-generate schema, RLS
+policies, and auth flows from prompts — the AI assistance doesn't disappear when
+you bring your own Supabase.
+
+Same technology. The difference is entirely ownership and control.
+
+## The trap nobody mentions until it's too late
+
+Three things about Lovable Cloud that don't show up in the demo:
+
+**1. Connecting to Cloud is irreversible.** Once a project is on Lovable Cloud,
+you cannot disconnect it or revert to an external Supabase. Lovable's own docs
+confirm this. There's no "undo."
+
+**2. There's no migration path out.** Lovable Cloud → your own Supabase isn't a
+supported flow. You own the frontend code in GitHub, so self-hosting the backend
+is *technically* possible — but it means manually reconstructing schema, RLS
+policies, auth config, storage buckets, and Edge Function secrets in a fresh
+project. On a real app with production data, that's a project, not a button.
+
+**3. The region is permanent.** Cloud projects are hosted in Americas, Europe,
+or Asia Pacific, chosen at creation and locked forever. If you have EU users and
+you didn't pick Europe before adding real data, you're now solving a
+data-residency and latency problem you can't fix in place.
+
+None of this matters for a weekend prototype. All of it matters the moment the
+app has paying users and real data sitting in a backend you don't actually own.
+
+## Ownership, billing, and the client problem
+
+If you build for clients — or you want clean separation between your projects —
+a dedicated Supabase project wins on the boring operational stuff that becomes
+critical at handoff:
+
+- **Billing is yours, or theirs.** A dedicated Supabase project sits in its own
+  organization, so costs can be assigned directly to the client. Lovable Cloud
+  rolls backend consumption into your Lovable credits — credit-based and
+  unpredictable, especially when debugging loops burn through prompts. The free
+  tier is roughly 5 credits a day (2–3 features), and active iteration can chew
+  through a 100-credit Pro plan in days. At scale the gap is real: a production
+  SaaS that runs ~\$35/mo on Supabase Pro can cost \$75+ on Lovable Cloud.
+- **Direct Postgres access.** When something breaks in production at 2am, you can
+  connect with `psql`, run a query, check the logs, inspect a slow plan. With
+  Cloud, you're limited to what the Lovable interface surfaces.
+- **Clean transfer.** Handing a client their own Supabase project (with you
+  holding appropriate access) is a real deliverable. Handing them an app whose
+  backend lives inside *your* Lovable account is not.
+
+## The security model is identical — and it's on you either way
+
+Both setups use the same two-zone model, and it's the same set of mistakes that
+sink AI-built apps:
+
+- **Client side (the safe zone):** the `anon` / publishable key lives in the
+  browser. It's safe to expose *only because* Row Level Security restricts it to
+  operations your policies explicitly allow.
+- **Server side (the secret zone):** the `service_role` key bypasses RLS
+  entirely. It belongs exclusively in Edge Functions, never in client code, never
+  in a `NEXT_PUBLIC_` variable.
+
+The non-negotiable that AI builders skip constantly: **RLS is not on by
+default.** A table without RLS enabled and policies written is a public table —
+anyone with your anon key (which ships in the browser) can read and write it.
+Lovable generates RLS when prompted well, but you have to verify it. "It works in
+the demo" and "it's secure" are different claims. Check every table:
+
+```sql
+-- find any table missing RLS in the public schema
+select tablename
+from pg_tables
+where schemaname = 'public'
+and tablename not in (
+  select tablename from pg_tables t
+  join pg_class c on c.relname = t.tablename
+  where c.relrowsecurity = true
+);
+```
+
+Whichever backend you use, this is your responsibility, not the tool's.
+
+## When to use which
+
+**Use Lovable Cloud when:**
+
+- You're validating an idea and speed is the only thing that matters.
+- It's a personal tool, an internal app, or a throwaway prototype.
+- You're running a demo or workshop and want zero infrastructure friction.
+- The data genuinely doesn't need to outlive the experiment.
+
+**Use a dedicated Supabase project when:**
+
+- The app is going to production. Full stop.
+- It's client work, or it needs its own billing.
+- You'll need real monitoring, direct DB access, or migrations.
+- Data residency / region matters (EU users, compliance).
+- More than one person or team will touch the backend.
+
+## The pattern that actually works
+
+Start on Lovable Cloud if speed matters early — but **decide before you write
+real data.** If you already know the project is going to production, provision a
+dedicated Supabase project from day one and point Lovable at it. The AI
+assistance is the same; you just keep the keys.
+
+If you know a project is headed to production, the cheapest moment to be on your
+own Supabase is *before* the first user signs up. The most expensive moment is
+after, once you're rebuilding a live backend by hand because "Cloud" turned out
+to mean "ours, not yours."
+
+> The tools are the same engine. What you're really choosing is whether you own
+> the car or you're borrowing it.

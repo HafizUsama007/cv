@@ -29,7 +29,7 @@ export async function generateMetadata({
     return {}
   }
 
-  const { title, summary, image, author, publishedAt } = post.metadata
+  const { title, summary, image, author, publishedAt, tags } = post.metadata
   const url = absoluteUrl(`/posts/${params.slug}`)
   // Use the post's own image, else fall back to the branded OG card.
   const ogImage = image ?? siteConfig.ogImage
@@ -37,6 +37,7 @@ export async function generateMetadata({
   return {
     title,
     description: summary,
+    keywords: tags,
     alternates: { canonical: url },
     openGraph: {
       type: 'article',
@@ -45,6 +46,7 @@ export async function generateMetadata({
       url,
       publishedTime: publishedAt,
       authors: author ? [author] : undefined,
+      tags,
       images: [{ url: ogImage, alt: title ?? '' }]
     },
     twitter: {
@@ -65,7 +67,7 @@ export default async function Post({ params }: { params: { slug: string } }) {
   }
 
   const { metadata, content } = post
-  const { title, summary, image, author, publishedAt } = metadata
+  const { title, summary, image, author, publishedAt, tags } = metadata
   const url = absoluteUrl(`/posts/${slug}`)
 
   return (
@@ -78,6 +80,7 @@ export default async function Post({ params }: { params: { slug: string } }) {
             headline: title,
             description: summary,
             image: image ? absoluteUrl(image.replace(siteConfig.basePath, '')) : undefined,
+            keywords: tags?.join(', '),
             datePublished: publishedAt,
             dateModified: publishedAt,
             author: { '@type': 'Person', name: author ?? siteConfig.fullName },
